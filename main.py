@@ -35,7 +35,7 @@ bot = commands.Bot(command_prefix='$')
 async def on_ready():
     guild = discord.utils.get(bot.guilds, name=GUILD)
     print(
-        f'{bot.user.name} is connected to the following guild: \n'
+        f'{bot.user.name} is connected to the following guild:\n'
         f'{guild.name}(id: {guild.id}'
     )
 
