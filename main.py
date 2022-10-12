@@ -1,5 +1,6 @@
 import os
 import random
+import asyncio
 
 import discord
 from discord.ext import commands
@@ -72,10 +73,17 @@ async def oracle(ctx):
     await ctx.send(f"How Likely?\n1. Impossible\n2. Highly Unlikely\n3. Unlikely\n4. Possible\n5. Likely\n"
                    f"6. Highly Likely\n7. A Certainty\n")
 
-    def check(msg):
+    async def check(msg):
+        if msg.content not in ['1', '2', '3', '4', '5','6', '7']:
+            await ctx.send('Not a valid choice!')
+
         return msg.author == ctx.author and msg.channel == ctx.channel and msg.content in ['1', '2', '3', '4', '5',
                                                                                            '6', '7']
-    msg = await bot.wait_for("message", check=check)
+    try:
+        msg = await bot.wait_for("message", check=check, timeout=5)
+    except asyncio.TimeoutError:
+        await ctx.send("Didn't reply in time!")
+    modifier = 1
     match msg.content:
         case '1':
             modifier = -6
@@ -91,11 +99,10 @@ async def oracle(ctx):
             modifier = 4
         case '7':
             modifier = 6
-        case _:
-            await ctx.send('Not a valid choice!\n')
-            return
     oracle_roll = random.randint(1, 20) + modifier
-    if oracle_roll < 7:
+    if modifier == 1:
+        await ctx.send('Not a valid choice!')
+    elif oracle_roll < 7:
         await ctx.send('No')
     elif oracle_roll > 12:
         await ctx.send('Yes')
