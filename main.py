@@ -66,4 +66,40 @@ async def passage_contents(ctx):
         row = cursor.fetchone()[0]
         await ctx.send(row)
 
+
+@bot.command(name='oracle')
+async def oracle(ctx):
+    await ctx.send(f"How Likely?\n1. Impossible\n2. Highly Unlikely\n3. Unlikely\n4. Possible\n5. Likely\n"
+                   f"6. Highly Likely\n7. A Certainty\n")
+
+    def check(msg):
+        return msg.author == ctx.author and msg.channel == ctx.channel and msg.content in ['1', '2', '3', '4', '5',
+                                                                                           '6', '7']
+    msg = await bot.wait_for("message", check=check)
+    match msg.content:
+        case '1':
+            modifier = -6
+        case '2':
+            modifier = -4
+        case '3':
+            modifier = -2
+        case '4':
+            modifier = 0
+        case '5':
+            modifier = 2
+        case '6':
+            modifier = 4
+        case '7':
+            modifier = 6
+        case _:
+            await ctx.send('Not a valid choice!\n')
+            return
+    oracle_roll = random.randint(1, 20) + modifier
+    if oracle_roll < 7:
+        await ctx.send('No')
+    elif oracle_roll > 12:
+        await ctx.send('Yes')
+    else:
+        await ctx.send('Maybe')
+
 bot.run(TOKEN)
