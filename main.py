@@ -58,7 +58,7 @@ async def passage_contents(ctx):
         database_connection.row_factory = lambda cursor, row: row[0]
         cursor = database_connection.cursor()
         contents_rolls = cursor.execute('SELECT passage_contents_roll FROM dungeon_passage_contents').fetchall()
-        contents_weights = cursor.execute('SELECT passage_contents_weight FROM dungeon_passage_contents').fetchall()
+        contents_weights = cursor.execute('SELECT weight FROM dungeon_passage_contents').fetchall()
         random_roll = random.choices(contents_rolls, weights=contents_weights, k=1)[0]
         database_connection.row_factory = sqlite3.Row
         cursor = database_connection.cursor()
@@ -77,12 +77,13 @@ async def oracle(ctx):
         if msg.content not in ['1', '2', '3', '4', '5','6', '7']:
             await ctx.send('Not a valid choice!')
 
-        return msg.author == ctx.author and msg.channel == ctx.channel and msg.content in ['1', '2', '3', '4', '5',
-                                                                                           '6', '7']
+        return msg.author == ctx.author and msg.channel == ctx.channel and \
+            msg.content in ['1', '2', '3', '4', '5', '6', '7']
     try:
         msg = await bot.wait_for("message", check=check, timeout=5)
     except asyncio.TimeoutError:
         await ctx.send("Didn't reply in time!")
+        return
     modifier = 1
     match msg.content:
         case '1':
@@ -271,5 +272,188 @@ async def door(ctx):
                        " WHERE dungeon_feature_roll=?", (random_roll,))
         dungeon_feature = cursor.fetchone()[0]
         await ctx.send(dungeon_feature)
+
+
+@bot.command(name='room_contents')
+async def room_contents(ctx):
+    with database_connection:
+        database_connection.row_factory = lambda cursor, row: row[0]
+        cursor = database_connection.cursor()
+        room_contents_roll = cursor.execute('SELECT room_contents_roll FROM dungeon_room_contents').fetchall()
+        weight = cursor.execute('SELECT weight FROM dungeon_room_contents').fetchall()
+        random_roll = random.choices(room_contents_roll, weights=weight, k=1)[0]
+        database_connection.row_factory = sqlite3.Row
+        cursor = database_connection.cursor()
+        cursor.execute("SELECT room_contents FROM dungeon_room_contents"
+                       " WHERE room_contents_roll=?", (random_roll,))
+        room_contents = cursor.fetchone()[0]
+        await ctx.send(room_contents)
+
+
+@bot.command(name='trap')
+async def dungeon_trap(ctx):
+    with database_connection:
+        database_connection.row_factory = lambda cursor, row: row[0]
+        cursor = database_connection.cursor()
+        dungeon_trap_roll = cursor.execute('SELECT dungeon_trap_roll FROM dungeon_trap').fetchall()
+        weight = cursor.execute('SELECT weight FROM dungeon_trap').fetchall()
+        random_roll = random.choices(dungeon_trap_roll, weights=weight, k=1)[0]
+        database_connection.row_factory = sqlite3.Row
+        cursor = database_connection.cursor()
+        cursor.execute("SELECT kind_of_trap FROM dungeon_trap"
+                       " WHERE dungeon_trap_roll=?", (random_roll,))
+        kind_of_trap = cursor.fetchone()[0]
+        random_roll = random.choices(dungeon_trap_roll, weights=weight, k=1)[0]
+        database_connection.row_factory = sqlite3.Row
+        cursor = database_connection.cursor()
+        cursor.execute("SELECT trap_notice_dc FROM dungeon_trap"
+                       " WHERE dungeon_trap_roll=?", (random_roll,))
+        trap_notice_dc = cursor.fetchone()[0]
+        random_roll = random.choices(dungeon_trap_roll, weights=weight, k=1)[0]
+        database_connection.row_factory = sqlite3.Row
+        cursor = database_connection.cursor()
+        cursor.execute("SELECT trap_save_dc FROM dungeon_trap"
+                       " WHERE dungeon_trap_roll=?", (random_roll,))
+        trap_save_dc = cursor.fetchone()[0]
+        random_roll = random.choices(dungeon_trap_roll, weights=weight, k=1)[0]
+        database_connection.row_factory = sqlite3.Row
+        cursor = database_connection.cursor()
+        cursor.execute("SELECT trap_damage FROM dungeon_trap"
+                       " WHERE dungeon_trap_roll=?", (random_roll,))
+        trap_damage = cursor.fetchone()[0]
+        await ctx.send(kind_of_trap)
+        await ctx.send(f"Notice DC: " + str(trap_notice_dc))
+        await ctx.send(f"Save DC: " + str(trap_save_dc))
+        await ctx.send(f"Damage: " + str(trap_damage))
+
+
+@bot.command(name='difficulty')
+async def encounter_difficulty(ctx):
+    with database_connection:
+        database_connection.row_factory = lambda cursor, row: row[0]
+        cursor = database_connection.cursor()
+        difficulty_roll = cursor.execute('SELECT difficulty_roll FROM encounter_difficulty').fetchall()
+        weight = cursor.execute('SELECT weight FROM encounter_difficulty').fetchall()
+        random_roll = random.choices(difficulty_roll, weights=weight, k=1)[0]
+        database_connection.row_factory = sqlite3.Row
+        cursor = database_connection.cursor()
+        cursor.execute("SELECT difficulty_description FROM encounter_difficulty"
+                       " WHERE difficulty_roll=?", (random_roll,))
+        encounter_difficulty = cursor.fetchone()[0]
+        await ctx.send(encounter_difficulty)
+
+
+@bot.command(name='something_found')
+async def something_found(ctx):
+    with database_connection:
+        database_connection.row_factory = lambda cursor, row: row[0]
+        cursor = database_connection.cursor()
+        something_found_roll = cursor.execute('SELECT something_found_roll FROM event_something_found').fetchall()
+        weight = cursor.execute('SELECT weight FROM event_something_found').fetchall()
+        random_roll = random.choices(something_found_roll, weights=weight, k=1)[0]
+        database_connection.row_factory = sqlite3.Row
+        cursor = database_connection.cursor()
+        cursor.execute("SELECT something_found_result FROM event_something_found"
+                       " WHERE something_found_roll=?", (random_roll,))
+        something_found = cursor.fetchone()[0]
+        await ctx.send(something_found)
+
+
+@bot.command(name='monster_intentions')
+async def monster_intentions(ctx):
+    with database_connection:
+        database_connection.row_factory = lambda cursor, row: row[0]
+        cursor = database_connection.cursor()
+        monster_intentions_roll = cursor.execute('SELECT monster_intentions_roll FROM monster_intentions').fetchall()
+        weight = cursor.execute('SELECT weight FROM monster_intentions').fetchall()
+        random_roll = random.choices(monster_intentions_roll, weights=weight, k=1)[0]
+        database_connection.row_factory = sqlite3.Row
+        cursor = database_connection.cursor()
+        cursor.execute("SELECT monster_intentions_description FROM monster_intentions"
+                       " WHERE monster_intentions_roll=?", (random_roll,))
+        monster_intentions = cursor.fetchone()[0]
+        await ctx.send(monster_intentions)
+
+
+@bot.command(name='monster_reactions')
+async def monster_reactions(ctx):
+    with database_connection:
+        database_connection.row_factory = lambda cursor, row: row[0]
+        cursor = database_connection.cursor()
+        monster_reactions_roll = cursor.execute('SELECT monster_reactions_roll FROM monster_reactions').fetchall()
+        weight = cursor.execute('SELECT weight FROM monster_reactions').fetchall()
+        random_roll = random.choices(monster_reactions_roll, weights=weight, k=1)[0]
+        database_connection.row_factory = sqlite3.Row
+        cursor = database_connection.cursor()
+        cursor.execute("SELECT monster_reactions_description FROM monster_reactions"
+                       " WHERE monster_reactions_roll=?", (random_roll,))
+        monster_reactions = cursor.fetchone()[0]
+        await ctx.send(monster_reactions)
+
+
+@bot.command(name='move_events')
+async def move_events(ctx):
+    with database_connection:
+        database_connection.row_factory = lambda cursor, row: row[0]
+        cursor = database_connection.cursor()
+        move_event_roll = cursor.execute('SELECT move_event_roll FROM move_events').fetchall()
+        weight = cursor.execute('SELECT weight FROM move_events').fetchall()
+        random_roll = random.choices(move_event_roll, weights=weight, k=1)[0]
+        database_connection.row_factory = sqlite3.Row
+        cursor = database_connection.cursor()
+        cursor.execute("SELECT move_event_result FROM move_events"
+                       " WHERE move_event_roll=?", (random_roll,))
+        move_events = cursor.fetchone()[0]
+        await ctx.send(move_events)
+
+
+@bot.command(name='notice')
+async def notice_something(ctx):
+    with database_connection:
+        database_connection.row_factory = lambda cursor, row: row[0]
+        cursor = database_connection.cursor()
+        notice_something_roll = cursor.execute('SELECT notice_something_roll FROM notice_something').fetchall()
+        weight = cursor.execute('SELECT weight FROM notice_something').fetchall()
+        random_roll = random.choices(notice_something_roll, weights=weight, k=1)[0]
+        database_connection.row_factory = sqlite3.Row
+        cursor = database_connection.cursor()
+        cursor.execute("SELECT notice_something_title FROM notice_something"
+                       " WHERE notice_something_roll=?", (random_roll,))
+        notice_something = cursor.fetchone()[0]
+        await ctx.send(notice_something)
+
+
+@bot.command(name='contents')
+async def contents(ctx):
+    with database_connection:
+        database_connection.row_factory = lambda cursor, row: row[0]
+        cursor = database_connection.cursor()
+        contents_roll = cursor.execute('SELECT room_contents_roll FROM room_contents').fetchall()
+        weight = cursor.execute('SELECT weight FROM room_contents').fetchall()
+        random_roll = random.choices(contents_roll, weights=weight, k=1)[0]
+        database_connection.row_factory = sqlite3.Row
+        cursor = database_connection.cursor()
+        cursor.execute("SELECT room_contents, room_contents_notes FROM room_contents"
+                       " WHERE room_contents_roll=?", (random_roll,))
+        contents, description = cursor.fetchone()
+        await ctx.send(contents)
+        await ctx.send(description)
+
+
+@bot.command(name='story')
+async def story(ctx):
+    with database_connection:
+        database_connection.row_factory = lambda cursor, row: row[0]
+        cursor = database_connection.cursor()
+        story_points_roll = cursor.execute('SELECT story_points_roll FROM story_points').fetchall()
+        weight = cursor.execute('SELECT weight FROM story_points').fetchall()
+        random_roll = random.choices(story_points_roll, weights=weight, k=1)[0]
+        database_connection.row_factory = sqlite3.Row
+        cursor = database_connection.cursor()
+        cursor.execute("SELECT story_points_result, story_points_description FROM story_points"
+                       " WHERE story_points_roll=?", (random_roll,))
+        story_points, description = cursor.fetchone()
+        await ctx.send(story_points)
+        await ctx.send(description)
 
 bot.run(TOKEN)
