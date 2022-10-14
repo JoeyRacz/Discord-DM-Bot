@@ -117,9 +117,10 @@ async def bane(ctx):
         cursor.execute("SELECT COUNT(*) from banes")
         roll_limit = cursor.fetchone()[0]
         a = random.randint(1, roll_limit)
-        cursor.execute("SELECT banes_descriptions FROM banes WHERE banes_roll=?", (a,))
-        row = cursor.fetchone()[0]
-        await ctx.send(row)
+        cursor.execute("SELECT banes_result, banes_descriptions FROM banes WHERE banes_roll=?", (a,))
+        result, description = cursor.fetchone()
+        await ctx.send(result)
+        await ctx.send(description)
 
 
 @bot.command(name='boon')
@@ -129,9 +130,10 @@ async def boon(ctx):
         cursor.execute("SELECT COUNT(*) from boons")
         roll_limit = cursor.fetchone()[0]
         a = random.randint(1, roll_limit)
-        cursor.execute("SELECT boons_result FROM boons WHERE boons_roll=?", (a,))
-        row = cursor.fetchone()[0]
-        await ctx.send(row)
+        cursor.execute("SELECT boons_result, boons_descriptions FROM boons WHERE boons_roll=?", (a,))
+        result, description = cursor.fetchone()
+        await ctx.send(result)
+        await ctx.send(description)
 
 
 @bot.command(name='encounter1')
@@ -152,7 +154,7 @@ async def encounter2(ctx):
         database_connection.row_factory = lambda cursor, row: row[0]
         cursor = database_connection.cursor()
         dungeon_encounters_roll = cursor.execute('SELECT dungeon_encounters_roll FROM dungeon_encounters_2').fetchall()
-        weight = cursor.execute('SELECT weight FROM dungeon_door').fetchall()
+        weight = cursor.execute('SELECT weight FROM dungeon_encounters_2').fetchall()
         random_roll = random.choices(dungeon_encounters_roll, weights=weight, k=1)[0]
         database_connection.row_factory = sqlite3.Row
         cursor = database_connection.cursor()
@@ -202,10 +204,10 @@ async def keywords(ctx):
 async def verbs(ctx):
     with database_connection:
         cursor = database_connection.cursor()
-        cursor.execute("SELECT COUNT(*) from verbs")
+        cursor.execute("SELECT COUNT(*) from situations_verbs")
         roll_limit = cursor.fetchone()[0]
         a = random.randint(1, roll_limit)
-        cursor.execute("SELECT verbs_description FROM verbs WHERE verbs_roll=?", (a,))
+        cursor.execute("SELECT verbs_description FROM situations_verbs WHERE verbs_roll=?", (a,))
         row = cursor.fetchone()[0]
         await ctx.send(row)
 
@@ -253,5 +255,21 @@ async def door(ctx):
                        " WHERE dungeon_door_roll=?", (random_roll,))
         dungeon_door = cursor.fetchone()[0]
         await ctx.send(dungeon_door)
+
+
+@bot.command(name='dungeon_feature')
+async def door(ctx):
+    with database_connection:
+        database_connection.row_factory = lambda cursor, row: row[0]
+        cursor = database_connection.cursor()
+        dungeon_feature_roll = cursor.execute('SELECT dungeon_feature_roll FROM dungeon_feature').fetchall()
+        weight = cursor.execute('SELECT weight FROM dungeon_feature').fetchall()
+        random_roll = random.choices(dungeon_feature_roll, weights=weight, k=1)[0]
+        database_connection.row_factory = sqlite3.Row
+        cursor = database_connection.cursor()
+        cursor.execute("SELECT dungeon_feature_description FROM dungeon_feature"
+                       " WHERE dungeon_feature_roll=?", (random_roll,))
+        dungeon_feature = cursor.fetchone()[0]
+        await ctx.send(dungeon_feature)
 
 bot.run(TOKEN)
