@@ -225,5 +225,4 @@ async def story(ctx):
     roll = await roll_weighted(ctx, "story_points_roll", "story_points_result", "story_points")
     await roll_weighted(ctx, "story_points_roll", "story_points_description", "story_points", roll)
 
-
 bot.run(TOKEN)
