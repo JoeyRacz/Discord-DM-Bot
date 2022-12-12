@@ -3,9 +3,14 @@ import json
 import sqlite3
 from sqlite3 import Error
 from dungeon_generator import dungeonGenerator
-from main import database_connection
+import database
 from abc import ABC, abstractmethod
 
+
+test_database = database.Database()
+test_database.connect()
+test_cursor = test_database.cursor_object
+test_connection = test_database.connection
 
 def load_json(file):
     with open(file) as dungeon_size:
@@ -27,6 +32,7 @@ dm.pruneDeadends(50)
 unconnected = dm.findUnconnectedAreas()
 dm.joinUnconnectedAreas(unconnected)
 dm.placeWalls()
+player_map = dm
 passages = []
 corridor_list_length = len(dm.corridors)
 for i, v in enumerate(dm.corridors):
@@ -38,51 +44,8 @@ for i, v in enumerate(dm.corridors):
         continue
     passages.append(i)
 dungeon_id = random.randint(1, 99999)
-create_dungeon_table = f""" CREATE TABLE IF NOT EXISTS D{dungeon_id}(
-                                id text PRIMARY KEY,
-                                description text NOT NULL
-                        );"""
 
-try:
-    c = database_connection.cursor()
-    c.execute(create_dungeon_table)
-except Error as e:
-    print(e)
-
-
-def insert_into_dungeon(object):
-    sql = f"""INSERT INTO D{dungeon_id}(id, description)
-                VALUES(?, ?)"""
-    cur = database_connection.cursor()
-    cur.execute(sql, object)
-    database_connection.commit()
-
-
-def roll_no_weight(roll, table, description):
-    with database_connection:
-        cursor = database_connection.cursor()
-        cursor.execute(f"SELECT COUNT(*) from {table}")
-        roll_limit = cursor.fetchone()[0]
-        a = random.randint(1, roll_limit)
-        cursor.execute(f"SELECT {description} FROM {table} WHERE {roll}=?", (a,))
-        row = cursor.fetchone()[0]
-        return row
-
-
-def roll_weighted(roll, table, description):
-    with database_connection:
-        database_connection.row_factory = lambda cursor, row: row[0]
-        cursor = database_connection.cursor()
-        contents_rolls = cursor.execute(f'SELECT {roll} FROM {table}').fetchall()
-        contents_weights = cursor.execute(f'SELECT weight FROM {table}').fetchall()
-        random_roll = random.choices(contents_rolls, weights=contents_weights, k=1)[0]
-        database_connection.row_factory = sqlite3.Row
-        cursor = database_connection.cursor()
-        cursor.execute(f"SELECT {description} FROM {table} WHERE {roll}=?",
-                       (random_roll,))
-        row = cursor.fetchone()[0]
-        return row
-
+test_database.create_dungeon_table(test_cursor, dungeon_id)
 
 class Strategy(ABC):
     @abstractmethod
@@ -110,8 +73,9 @@ class Door(Strategy):
     def save_dungeon_part(self) -> None:
         y = 0
         for i in dm.doors:
-            x = (f"D{y}", roll_weighted("dungeon_door_roll", "dungeon_door", "dungeon_door_description"))
-            insert_into_dungeon(x)
+            x = (f"D{y}", test_database.weighted_query(test_cursor, test_connection, "dungeon_door_roll",
+                                                       "dungeon_door_description", "dungeon_door"))
+            test_database.insert_into_dungeon(x, test_cursor, test_connection, dungeon_id)
             y += 1
 
 
@@ -119,8 +83,9 @@ class Passage(Strategy):
     def save_dungeon_part(self) -> None:
         y = 0
         for i in passages:
-            x = (f"P{y}", roll_weighted("dungeon_door_roll", "dungeon_door", "dungeon_door_description"))
-            insert_into_dungeon(x)
+            x = (f"P{y}", test_database.weighted_query(test_cursor, test_connection, "passage_contents_roll",
+                                                       "passage_contents", "dungeon_passage_contents"))
+            test_database.insert_into_dungeon(x, test_cursor, test_connection, dungeon_id)
             y += 1
 
 
@@ -128,8 +93,9 @@ class Room(Strategy):
     def save_dungeon_part(self) -> None:
         y = 0
         for i in dm.rooms:
-            x = (f"R{y}", roll_weighted("dungeon_door_roll", "dungeon_door", "dungeon_door_description"))
-            insert_into_dungeon(x)
+            x = (f"R{y}", test_database.weighted_query(test_cursor, test_connection, "room_contents_roll",
+                                                       "room_contents", "dungeon_room_contents"))
+            test_database.insert_into_dungeon(x, test_cursor, test_connection, dungeon_id)
             y += 1
 
 

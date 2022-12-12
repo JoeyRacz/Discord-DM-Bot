@@ -34,5 +34,29 @@ class Database(metaclass=MetaDatabase):
             a = random.randint(1, roll_limit)
         cursor.execute(f"SELECT {description} FROM {table} WHERE {roll}=?", (a,))
         row = cursor.fetchone()[0]
-        print(row)
-        return a
+        return row, a
+
+    def weighted_query(self, cursor, connection, roll, description, table, a=-1):
+        connection.row_factory = lambda cursor, row: row[0]
+        new_cursor = connection.cursor()
+        contents_rolls = new_cursor.execute(f'SELECT {roll} FROM {table}').fetchall()
+        contents_weights = new_cursor.execute(f'SELECT weight FROM {table}').fetchall()
+        if a == -1:
+            a = random.choices(contents_rolls, weights=contents_weights, k=1)[0]
+        connection.row_factory = sqlite3.Row
+        cursor.execute(f"SELECT {description} FROM {table} WHERE {roll}=?",
+                       (a,))
+        row = cursor.fetchone()[0]
+        return row, a
+
+    def create_dungeon_table(self, cursor, table_id):
+        cursor.execute(f"""CREATE TABLE IF NOT EXISTS D{table_id}(
+                                id text PRIMARY KEY,
+                                description text NOT NULL
+                        );""")
+
+    def insert_into_dungeon(self, object, cursor, connection, dungeon_id):
+        sql = f"""INSERT INTO D{dungeon_id}(id, description)
+                    VALUES(?, ?)"""
+        cursor.execute(sql, object)
+        connection.commit()
